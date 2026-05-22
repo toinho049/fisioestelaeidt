@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(cmd /c \"dir /a \"\"c:\\\\Users\\\\Mateus Dambros\\\\Desktop\\\\estela\"\"\")"
-    ]
-  }
-}
