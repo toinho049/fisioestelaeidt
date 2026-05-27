@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── MULTI-TENANT ─────────────────────────────────────────────────────────────
+
+model Clinica {
+  id             String   @id @default(cuid())
+  nome           String
+  licencaAtivaId String?  // ID da licença ativa desta clínica
+  criadoEm       DateTime @default(now())
+
+  usuarios        User[]
+  pacientes       Paciente[]
+  fisioterapeutas Fisioterapeuta[]
+  agendamentos    Agendamento[]
+  prontuarios     Prontuario[]
+  avaliacoes      Avaliacao[]
+  planos          PlanoTratamento[]
+  pagamentos      Pagamento[]
+  prescricoes     PrescricaoExercicio[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  nome         String
+  email        String   @unique
+  senha        String
+  role         String   @default("fisioterapeuta")
+  ativo        Boolean  @default(true)
+  clinicaId    String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  clinica      Clinica? @relation(fields: [clinicaId], references: [id])
+}
+
+// ─── SAAS LICENCIAMENTO ───────────────────────────────────────────────────────
+
+model PlanoSaaS {
+  id           String   @id @default(cuid())
+  nome         String
+  preco        Float
+  diasValidade Int
+  maxUsuarios  Int      @default(1)
+  descricao    String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+}
+
+model SolicitacaoLicenca {
+  id           String   @id @default(cuid())
+  nomeTitular  String
+  email        String
+  nomeClinica  String
+  telefone     String?
+  planoNome    String
+  diasPlano    Int
+  status       String   @default("pendente")
+  observacoes  String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  licenca      Licenca?
+}
+
+model Licenca {
+  id            String              @id @default(cuid())
+  token         String              @unique
+  nomeClinica   String
+  email         String
+  planoNome     String
+  diasValidade  Int
+  status        String              @default("pendente")
+  dataInicio    DateTime?
+  dataExpiracao DateTime?
+  ativadaEm     DateTime?
+  solicitacaoId String?             @unique
+  criadoEm      DateTime            @default(now())
+  atualizadoEm  DateTime            @updatedAt
+
+  solicitacao   SolicitacaoLicenca? @relation(fields: [solicitacaoId], references: [id])
+}
+
+// ─── CLÍNICO ──────────────────────────────────────────────────────────────────
+
+model Paciente {
+  id              String   @id @default(cuid())
+  clinicaId       String
+  nome            String
+  cpf             String?
+  dataNascimento  DateTime?
+  telefone        String?
+  email           String?
+  endereco        String?
+  convenio        String?
+  numeroConvenio  String?
+  observacoes     String?
+  ativo           Boolean  @default(true)
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  clinica         Clinica       @relation(fields: [clinicaId], references: [id])
+  agendamentos    Agendamento[]
+  prontuarios     Prontuario[]
+  pagamentos      Pagamento[]
+  avaliacoes      Avaliacao[]
+  planosTratamento PlanoTratamento[]
+  prescricoes     PrescricaoExercicio[]
+}
+
+model Fisioterapeuta {
+  id            String   @id @default(cuid())
+  clinicaId     String
+  nome          String
+  crefito       String?
+  especialidade String?
+  telefone      String?
+  email         String?
+  ativo         Boolean  @default(true)
+  criadoEm      DateTime @default(now())
+
+  clinica       Clinica       @relation(fields: [clinicaId], references: [id])
+  agendamentos  Agendamento[]
+}
+
+model Agendamento {
+  id               String          @id @default(cuid())
+  clinicaId        String
+  pacienteId       String
+  fisioterapeutaId String?
+  data             DateTime
+  duracao          Int             @default(50)
+  status           String          @default("agendado")
+  tipo             String          @default("consulta")
+  observacoes      String?
+  sala             String?
+  criadoEm         DateTime        @default(now())
+  atualizadoEm     DateTime        @updatedAt
+
+  clinica          Clinica         @relation(fields: [clinicaId], references: [id])
+  paciente         Paciente        @relation(fields: [pacienteId], references: [id])
+  fisioterapeuta   Fisioterapeuta? @relation(fields: [fisioterapeutaId], references: [id])
+  pagamentos       Pagamento[]
+}
+
+model Prontuario {
+  id           String   @id @default(cuid())
+  clinicaId    String
+  pacienteId   String
+  data         DateTime @default(now())
+  tipo         String   @default("evolucao")
+  queixa       String?
+  anamnese     String?
+  exame        String?
+  diagnostico  String?
+  conduta      String?
+  evolucao     String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  clinica      Clinica  @relation(fields: [clinicaId], references: [id])
+  paciente     Paciente @relation(fields: [pacienteId], references: [id])
+}
+
+model Avaliacao {
+  id                  String   @id @default(cuid())
+  clinicaId           String
+  pacienteId          String
+  data                DateTime @default(now())
+  tipo                String   @default("inicial")
+  queixaPrincipal     String?
+  historiaDoenca      String?
+  historiaPregressa   String?
+  medicamentos        String?
+  comorbidades        String?
+  habitosVida         String?
+  inspecao            String?
+  palpacao            String?
+  testesEspeciais     String?
+  postura             String?
+  adm                 String?
+  forcaMuscular       String?
+  escalaDor           Int?
+  localizacaoDor      String?
+  funcionalidade      String?
+  diagnostico         String?
+  objetivos           String?
+  numeroSessoes       Int?
+  criadoEm            DateTime @default(now())
+  atualizadoEm        DateTime @updatedAt
+
+  clinica             Clinica  @relation(fields: [clinicaId], references: [id])
+  paciente            Paciente @relation(fields: [pacienteId], references: [id])
+}
+
+model PlanoTratamento {
+  id                String   @id @default(cuid())
+  clinicaId         String
+  pacienteId        String
+  titulo            String
+  objetivoCurto     String?
+  objetivoLongo     String?
+  sessoesTotais     Int      @default(10)
+  sessoesRealizadas Int      @default(0)
+  tecnicas          String?
+  recursos          String?
+  status            String   @default("ativo")
+  dataInicio        DateTime @default(now())
+  dataFim           DateTime?
+  observacoes       String?
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  clinica           Clinica  @relation(fields: [clinicaId], references: [id])
+  paciente          Paciente @relation(fields: [pacienteId], references: [id])
+}
+
+model Exercicio {
+  id           String   @id @default(cuid())
+  nome         String
+  descricao    String?
+  categoria    String?
+  instrucoes   String?
+  series       Int?
+  repeticoes   String?
+  tempo        String?
+  nivel        String   @default("moderado")
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+
+  prescricoes  PrescricaoExercicio[]
+}
+
+model PrescricaoExercicio {
+  id           String   @id @default(cuid())
+  clinicaId    String
+  pacienteId   String
+  exercicioId  String
+  series       Int?
+  repeticoes   String?
+  tempo        String?
+  frequencia   String?
+  observacoes  String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+
+  clinica      Clinica   @relation(fields: [clinicaId], references: [id])
+  paciente     Paciente  @relation(fields: [pacienteId], references: [id])
+  exercicio    Exercicio @relation(fields: [exercicioId], references: [id])
+}
+
+model Pagamento {
+  id             String       @id @default(cuid())
+  clinicaId      String
+  pacienteId     String
+  agendamentoId  String?
+  valor          Float
+  desconto       Float        @default(0)
+  formaPagamento String       @default("dinheiro")
+  status         String       @default("pendente")
+  dataVencimento DateTime?
+  dataPagamento  DateTime?
+  descricao      String?
+  criadoEm       DateTime     @default(now())
+  atualizadoEm   DateTime     @updatedAt
+
+  clinica        Clinica      @relation(fields: [clinicaId], references: [id])
+  paciente       Paciente     @relation(fields: [pacienteId], references: [id])
+  agendamento    Agendamento? @relation(fields: [agendamentoId], references: [id])
+}
+
+// Removido ConfigSistema global — licença agora é por Clinica.licencaAtivaId
