@@ -12,7 +12,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const body = await req.json();
 
-  const sol = await prisma.solicitacaoLicenca.findUnique({ where: { id } });
+  const sol = await prisma.solicitacaoLicenca.findUnique({
+    where: { id },
+    include: { licenca: true },
+  });
   if (!sol) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
 
   if (body.status === "aprovado" && !sol.licenca) {

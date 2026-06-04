@@ -18,6 +18,7 @@ interface Solicitacao {
   nomeTitular: string;
   planoNome: string;
   diasPlano: number;
+  status: string;
   criadoEm: string;
   licenca: { token: string } | null;
 }

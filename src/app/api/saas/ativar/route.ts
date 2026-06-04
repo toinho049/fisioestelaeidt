@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
+function calcularDiasRestantes(dataExpiracao: Date | string | null) {
+  if (!dataExpiracao) return null;
+  const expiracao = new Date(dataExpiracao);
+  const hoje = new Date();
+  const hojeUtc = Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const expiracaoUtc = Date.UTC(expiracao.getFullYear(), expiracao.getMonth(), expiracao.getDate());
+  return Math.max(0, Math.round((expiracaoUtc - hojeUtc) / 86400000));
+}
+
 // GET — verifica status da licença da clínica do usuário logado
 export async function GET() {
   const session = await getSession();
@@ -31,9 +40,7 @@ export async function GET() {
     return NextResponse.json({ ativa: false, motivo: "expirada" });
   }
 
-  const diasRestantes = licenca.dataExpiracao
-    ? Math.max(0, Math.ceil((licenca.dataExpiracao.getTime() - Date.now()) / 86400000))
-    : null;
+  const diasRestantes = calcularDiasRestantes(licenca.dataExpiracao);
 
   return NextResponse.json({
     ativa: true,

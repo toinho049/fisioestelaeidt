@@ -20,6 +20,15 @@ interface Licenca {
   solicitacao: { nomeTitular: string; telefone: string | null } | null;
 }
 
+function calcularDiasRestantes(dataExpiracao: string | null) {
+  if (!dataExpiracao) return null;
+  const expiracao = new Date(dataExpiracao);
+  const hoje = new Date();
+  const hojeUtc = Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const expiracaoUtc = Date.UTC(expiracao.getFullYear(), expiracao.getMonth(), expiracao.getDate());
+  return Math.max(0, Math.round((expiracaoUtc - hojeUtc) / 86400000));
+}
+
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
   pendente:  { label: "Aguardando ativação", color: "#92400e", bg: "#fef3c7", icon: Clock },
   ativa:     { label: "Ativa", color: "#065f46", bg: "#d1fae5", icon: CheckCircle },
@@ -99,9 +108,7 @@ export default function LicencasPage() {
               {filtered.map((l, i) => {
                 const cfg = STATUS_CFG[l.status] ?? STATUS_CFG.pendente;
                 const StatusIcon = cfg.icon;
-                const diasRestantes = l.dataExpiracao
-                  ? Math.max(0, Math.ceil((new Date(l.dataExpiracao).getTime() - Date.now()) / 86400000))
-                  : null;
+                const diasRestantes = calcularDiasRestantes(l.dataExpiracao);
                 return (
                   <tr key={l.id} style={{ borderBottom: i < filtered.length - 1 ? "1px solid #f8fafc" : "none" }}>
                     <td className="px-4 py-3">

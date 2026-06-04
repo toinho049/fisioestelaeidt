@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const prescricao = await prisma.prescricaoExercicio.create({
     data: {
+      clinicaId: body.clinicaId,
       pacienteId: body.pacienteId,
       exercicioId: body.exercicioId,
       series: body.series ? Number(body.series) : null,

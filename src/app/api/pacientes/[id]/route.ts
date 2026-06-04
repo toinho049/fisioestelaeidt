@@ -38,6 +38,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await prisma.paciente.update({ where: { id }, data: { ativo: false } });
+
+  await prisma.$transaction([
+    prisma.pagamento.deleteMany({ where: { pacienteId: id } }),
+    prisma.prontuario.deleteMany({ where: { pacienteId: id } }),
+    prisma.avaliacao.deleteMany({ where: { pacienteId: id } }),
+    prisma.prescricaoExercicio.deleteMany({ where: { pacienteId: id } }),
+    prisma.planoTratamento.deleteMany({ where: { pacienteId: id } }),
+    prisma.agendamento.deleteMany({ where: { pacienteId: id } }),
+    prisma.paciente.delete({ where: { id } }),
+  ]);
+
   return NextResponse.json({ ok: true });
 }

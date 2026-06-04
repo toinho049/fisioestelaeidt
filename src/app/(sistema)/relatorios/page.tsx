@@ -12,6 +12,11 @@ interface DashData {
   agendamentosMes: number;
   receitaMes: number;
   receitaPendente: number;
+  atendimentosPorMes: { label: string; value: number }[];
+  receitaPorMes: { label: string; value: number }[];
+  taxaOcupacao: number;
+  taxaRetorno: number;
+  taxaInadimplencia: number;
 }
 
 function StatCard({ title, value, subtitle, icon: Icon, color }: {
@@ -52,19 +57,14 @@ export default function RelatoriosPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/dashboard").then(r => r.json()).then(d => { setData(d); setLoading(false); });
+    fetch("/api/dashboard")
+      .then((r) => r.json())
+      .then((d) => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
-  // Gera últimos 6 meses para simular dados de gráfico
-  const ultimos6Meses = Array.from({ length: 6 }, (_, i) => {
-    const d = subMonths(new Date(), 5 - i);
-    return { label: format(d, "MMM", { locale: ptBR }), value: Math.floor(Math.random() * 40) + 5 };
-  });
-
-  const receitaMeses = Array.from({ length: 6 }, (_, i) => {
-    const d = subMonths(new Date(), 5 - i);
-    return { label: format(d, "MMM", { locale: ptBR }), value: Math.floor(Math.random() * 8000) + 2000 };
-  });
+  const ultimos6Meses = data?.atendimentosPorMes ?? [];
+  const receitaMeses = data?.receitaPorMes ?? [];
 
   const mesAtual = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
 
@@ -130,9 +130,9 @@ export default function RelatoriosPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { label: "Taxa de Ocupação", value: 78, color: "#0ea5e9", desc: "Agenda preenchida este mês" },
-            { label: "Taxa de Retorno", value: 65, color: "#10b981", desc: "Pacientes que continuaram tratamento" },
-            { label: "Taxa de Inadimplência", value: 12, color: "#f59e0b", desc: "Pagamentos em atraso" },
+            { label: "Taxa de Ocupação", value: data?.taxaOcupacao ?? 0, color: "#0ea5e9", desc: "Agenda preenchida este mês" },
+            { label: "Taxa de Retorno", value: data?.taxaRetorno ?? 0, color: "#10b981", desc: "Pacientes que retornaram" },
+            { label: "Taxa de Inadimplência", value: data?.taxaInadimplencia ?? 0, color: "#f59e0b", desc: "Pagamentos em atraso" },
           ].map(({ label, value, color, desc }) => (
             <div key={label} className="p-4 rounded-xl" style={{ backgroundColor: "#f8fafc" }}>
               <div className="flex items-center justify-between mb-2">

@@ -2,7 +2,7 @@
 
 import { Bell, Search, ShieldCheck, Clock, AlertTriangle } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 const pageTitles: Record<string, string> = {
@@ -30,6 +30,8 @@ interface LicencaStatus {
 export default function Header() {
   const pathname = usePathname();
   const [licenca, setLicenca] = useState<LicencaStatus | null>(null);
+  const [notificacoesAbertas, setNotificacoesAbertas] = useState(false);
+  const notificacoesRef = useRef<HTMLDivElement | null>(null);
 
   const title =
     pageTitles[pathname] ??
@@ -41,6 +43,16 @@ export default function Header() {
       .then(r => r.json())
       .then(setLicenca)
       .catch(() => null);
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (notificacoesRef.current && !notificacoesRef.current.contains(event.target as Node)) {
+        setNotificacoesAbertas(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const diasRestantes = licenca?.diasRestantes ?? null;
@@ -95,15 +107,40 @@ export default function Header() {
         </div>
 
         {/* Bell */}
-        <button
-          className="relative w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f1f5f9"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#f8fafc"; }}
-        >
-          <Bell style={{ width: 14, height: 14, color: "#64748b" }} />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#ef4444" }} />
-        </button>
+        <div ref={notificacoesRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setNotificacoesAbertas((prev) => !prev)}
+            className="relative w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f1f5f9"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#f8fafc"; }}
+          >
+            <Bell style={{ width: 14, height: 14, color: "#64748b" }} />
+            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#ef4444" }} />
+          </button>
+
+          {notificacoesAbertas && (
+            <div className="absolute right-0 top-full z-20 mt-2 w-80 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+                <span className="font-semibold text-slate-900">Notificações</span>
+                <button
+                  type="button"
+                  onClick={() => setNotificacoesAbertas(false)}
+                  className="text-xs font-medium text-slate-500 hover:text-slate-700"
+                >
+                  Fechar
+                </button>
+              </div>
+              <div className="px-4 py-4 text-sm text-slate-600">
+                <div className="rounded-3xl bg-slate-50 p-3">
+                  <p className="font-medium text-slate-900">Sem novas notificações</p>
+                  <p className="mt-1 text-xs text-slate-500">Verifique novamente mais tarde.</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

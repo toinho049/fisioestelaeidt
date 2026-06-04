@@ -42,6 +42,7 @@ export default function PacientesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -67,6 +68,14 @@ export default function PacientesPage() {
     setSaving(false);
     setModalOpen(false);
     setForm(emptyForm);
+    load();
+  }
+
+  async function excluirPaciente(id: string) {
+    if (!window.confirm("Tem certeza que deseja excluir este paciente?")) return;
+    setDeletingId(id);
+    await fetch(`/api/pacientes/${id}`, { method: "DELETE" });
+    setDeletingId(null);
     load();
   }
 
@@ -139,18 +148,18 @@ export default function PacientesPage() {
         ) : (
           <div>
             {pacientes.map((p, i) => (
-              <Link
+              <div
                 key={p.id}
-                href={`/pacientes/${p.id}`}
                 className="grid items-center px-5 py-3.5 transition-colors"
                 style={{
-                  gridTemplateColumns: "2fr 1fr 1fr 1fr 80px 40px",
+                  gridTemplateColumns: "2fr 1fr 1fr 1fr 80px 80px",
                   borderBottom: i < pacientes.length - 1 ? "1px solid #f8fafc" : "none",
                   backgroundColor: "#fff",
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f8fafc"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#fff"; }}
               >
+                <Link href={`/pacientes/${p.id}`} className="contents">
                 <div className="flex items-center gap-3 min-w-0">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
@@ -195,8 +204,21 @@ export default function PacientesPage() {
                     {p.ativo ? "Ativo" : "Inativo"}
                   </span>
                 </div>
-                <ChevronRight style={{ width: 14, height: 14, color: "#cbd5e1" }} />
               </Link>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); excluirPaciente(p.id); }}
+                disabled={deletingId === p.id}
+                className="text-xs font-semibold rounded-lg px-3 py-2 transition-all"
+                style={{
+                  backgroundColor: deletingId === p.id ? "#f8fafc" : "#fee2e2",
+                  color: "#b91c1c",
+                  border: "1px solid #fecaca",
+                }}
+              >
+                {deletingId === p.id ? "Excluindo..." : "Excluir"}
+              </button>
+            </div>
             ))}
           </div>
         )}

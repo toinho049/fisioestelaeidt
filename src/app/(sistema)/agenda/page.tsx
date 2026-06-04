@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Plus, X, Clock, User, Stethoscope } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, ClipboardList } from "lucide-react";
+import AvaliacaoModal from "@/components/AvaliacaoModal";
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -15,12 +16,6 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }
   faltou:    { bg: "#fef3c7", text: "#92400e", border: "#f59e0b" },
 };
 
-const TIPO_COLORS: Record<string, string> = {
-  consulta: "#3b82f6",
-  retorno: "#10b981",
-  avaliacao: "#8b5cf6",
-  procedimento: "#f59e0b",
-};
 
 interface Paciente { id: string; nome: string }
 interface Fisioterapeuta { id: string; nome: string }
@@ -54,9 +49,10 @@ export default function AgendaPage() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [fisios, setFisios] = useState<Fisioterapeuta[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [detailModal, setDetailModal] = useState<Agendamento | null>(null);
+  const [avaliacaoModal, setAvaliacaoModal] = useState(false);
+  const [pacienteParaAvaliar, setPacienteParaAvaliar] = useState<string | undefined>();
   const [filtroFisio, setFiltroFisio] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
   const [form, setForm] = useState({
@@ -84,7 +80,6 @@ export default function AgendaPage() {
     const res = await fetch(`/api/agendamentos?${params}`);
     const data = await res.json();
     setAgendamentos(data);
-    setLoading(false);
   }, [semanaAtual, filtroFisio, filtroStatus]);
 
   useEffect(() => {
@@ -95,11 +90,6 @@ export default function AgendaPage() {
 
   const agendamentosDia = (dia: Date) =>
     agendamentos.filter(ag => isSameDay(parseISO(ag.data), dia));
-
-  const getTopOffset = (hora: string) => {
-    const [h, m] = hora.split(":").map(Number);
-    return ((h - 6) * 60 + m) * (56 / 60);
-  };
 
   async function salvarAgendamento() {
     if (!form.pacienteId || !form.data) return;
@@ -521,17 +511,35 @@ export default function AgendaPage() {
               >
                 Excluir
               </button>
-              <button
-                onClick={() => setDetailModal(null)}
-                className="text-sm font-medium px-4 py-2 rounded-lg text-white"
-                style={{ backgroundColor: "#0ea5e9" }}
-              >
-                Fechar
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setPacienteParaAvaliar(detailModal.pacienteId); setDetailModal(null); setAvaliacaoModal(true); }}
+                  className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg text-white"
+                  style={{ background: "linear-gradient(135deg, #0ea5e9, #8b5cf6)" }}
+                >
+                  <ClipboardList style={{ width: 14, height: 14 }} />
+                  Avaliar
+                </button>
+                <button
+                  onClick={() => setDetailModal(null)}
+                  className="text-sm font-medium px-4 py-2 rounded-lg"
+                  style={{ border: "1px solid #e2e8f0", color: "#64748b" }}
+                >
+                  Fechar
+                </button>
+              </div>
             </div>
           </>
         )}
       </Modal>
+
+      <AvaliacaoModal
+        open={avaliacaoModal}
+        onClose={() => setAvaliacaoModal(false)}
+        onSaved={() => {}}
+        pacienteIdInicial={pacienteParaAvaliar}
+        pacientes={pacientes}
+      />
     </div>
   );
 }

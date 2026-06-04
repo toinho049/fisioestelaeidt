@@ -90,7 +90,16 @@ export default function AtivarPage() {
     const data = await res.json();
     setLoadingToken(false);
     if (!res.ok) setErroToken(data.error ?? "Erro ao ativar.");
-    else setSucessoToken(data.licenca);
+    else {
+      setSucessoToken(data.licenca);
+      setLicencaAtual({
+        ativa: true,
+        nomeClinica: data.licenca.nomeClinica,
+        plano: data.licenca.plano,
+        dataExpiracao: data.licenca.dataExpiracao,
+        diasRestantes: calcularDiasRestantes(data.licenca.dataExpiracao),
+      });
+    }
   }
 
   // ── Solicitar ──
@@ -118,6 +127,15 @@ export default function AtivarPage() {
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+
+  function calcularDiasRestantes(dataExpiracao?: string | null) {
+    if (!dataExpiracao) return null;
+    const expiracao = new Date(dataExpiracao);
+    const hoje = new Date();
+    const hojeUtc = Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    const expiracaoUtc = Date.UTC(expiracao.getFullYear(), expiracao.getMonth(), expiracao.getDate());
+    return Math.max(0, Math.round((expiracaoUtc - hojeUtc) / 86400000));
+  }
 
   const diasRestantes = licencaAtual?.diasRestantes ?? 0;
   const alerta = diasRestantes <= 7;
